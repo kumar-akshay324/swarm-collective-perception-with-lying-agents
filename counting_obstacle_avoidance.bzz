@@ -1,0 +1,117 @@
+
+# Global variables
+
+OBSTACLE_COORDINATES = {}
+WALL_DIAGONAL_COORDINATES = {}
+
+OBSTACLE_COUNT = 0
+ 
+
+
+
+# ----- Helper Functions -----
+
+# Function to compute the position from the distance and angle readings
+
+function computePositionFromReadings(length, angle) {
+   var local_position_vector 
+   local_position_vector = { .x = length * math.cos(angle),.y = length * math.sin(angle) }
+   return local_position_vector
+}
+
+# Function to compute the new position depending upon two coordinates
+
+function computePosition(pos1, pos2) {
+  var new_position_x = pos1.x + pos2.x
+  var new_position_y = pos1.y + pos2.y
+  pos1.x = new_position_x
+  pos1.y = new_position_y 
+  return pos1
+}
+
+# Function to compute the orientation in global FOR give the position (x, y) coordinates
+
+function computeOrientation(pos) {
+  var orientation = math.atan(pos.y, pos.x)
+  return orientation
+}
+
+# ----- Function to Start the Buzz Script -----
+
+function init() {
+  log("Obstacle avoidance for Khepera IV using Buzz")
+}
+
+# ----- Function to run on each timestep -----
+
+function step() {
+  var i = 0
+  var final_pos = {.x = 0 , .y = 0 }
+  temp_pos = {}
+  while (i < 8) 
+  {
+
+  distance = proximity[i].value             # Sensor reading
+  orientation = proximity[i].angle          # Sensor reading
+  temp_pos.i = computePositionFromReadings(distance, orientation)
+
+  log("Iteration Number: ", i)
+
+  final_pos = computePosition(temp_pos.i, final_pos)
+
+  i = i+1
+  log("Final Position = ", final_pos)
+  }
+
+  orient = computeOrientation(final_pos)
+
+  dist = math.sqrt(final_pos.x*final_pos.x + final_pos.y*final_pos.y)
+  dist_final = dist/3
+  log("Orientation: ",orient)
+  log("Distance: ", dist_final)
+
+  # ---- Obstacle Avoidance Algorithm
+
+  if (dist_final < 0.005){
+   set_wheels(30.0,30.0)
+  } 
+
+  if ((orient == 0.0) and (dist_final > 0.005)){
+   set_wheels(30.0, 0.0)
+  }
+
+  if ((orient < 1.57) and (orient > 0.0)){
+   set_wheels(30.0,0.0)
+  }
+
+  if ((orient > -1.57) and (orient < 0.0)){
+  	set_wheels(0.0,30.0)
+  }
+}
+
+
+# Function to store positions of unique obstacles
+function StoreUniqueObstacles() {
+  
+}
+
+# Function to setup the robots to join a swarm
+function SetupSwarm() {
+  
+}
+
+
+# Function to setup the communication protocol for the robot
+
+function SetupSwarmCommunication() {
+
+}
+
+
+# Function to compute and save the locations of things that can NOT be an obstacle
+# Such things include the walls and the other robots that are detected.
+
+
+function reset() {}
+
+function destroy() {}

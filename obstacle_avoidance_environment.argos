@@ -5,8 +5,8 @@
   <!-- * General configuration * -->
   <!-- ************************* -->
   <framework>
-    <system threads="0"/>
-    <experiment length="0" ticks_per_second="10" random_seed="110"/>
+    <system threads="2"/>
+    <experiment length="0" ticks_per_second="10" random_seed="11"/>
   </framework>
 
   <!-- *************** -->
@@ -24,6 +24,8 @@
         <kheperaiv_proximity implementation="default" show_rays="true"/>
         <range_and_bearing   implementation="medium" medium="rab"
                              show_rays="true" noise_std_dev="0"/>
+        <positioning         implementation="default" />
+ 
       </sensors>
       <params>
         <wheel_turning hard_turn_angle_threshold="90"
@@ -32,7 +34,9 @@
                        max_speed="10"/>
       </params>
       <params alpha="7.5" delta="0.1" velocity="5"/>
-      <params bytecode_file="obstacle_avoidance.bo" debug_file="obstacle_avoidance.bdb"/>
+      <params bytecode_file="counting_obstacle_avoidance.bo" debug_file="counting_obstacle_avoidance.bdb"/>
+      <!-- <params bytecode_file="obstacle_avoidance.bo" debug_file="obstacle_avoidance.bdb"/> -->
+
     </buzz_controller_kheperaiv>
 
   </controllers>
@@ -65,7 +69,7 @@
     <distribute>
       <position method="uniform" min="-4,-4,0" max="4,4,0"/>
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0"/>
-      <entity quantity="15" max_trials="100">
+      <entity quantity="8" max_trials="100">
         <kheperaiv id="kheperaIV">
           <controller config="bckiv"/>
         </kheperaiv>

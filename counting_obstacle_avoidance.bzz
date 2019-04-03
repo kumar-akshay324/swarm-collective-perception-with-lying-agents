@@ -5,16 +5,17 @@
 
 # Global variables
 
+DISTANCE_THRESHOLD = 0.005
+
 OBSTACLE_COORDINATES = {}
 WALL_DIAGONAL_COORDINATES = {.x1 = 4, .y1 = 4, .x2 = -4, .y2 = -4}
 
-OBSTACLE_COUNT = 0
-NUMBER_OF_SENSORS = 8
+OBSTACLE_COUNT_BELIEF = 0
+NUMBER_PROXIMITY_SENSORS = 8
 
-# ----- Helper Functions -----
+# ----- Helper Functions for Obstacle Avoidance-----
 
 # Function to compute the position from the distance and angle readings
-
 function computePositionFromReadings(length, angle) {
    var local_position_vector 
    # var length = 4.14*(math.exp(-33.0*expressed_length))- 0.085
@@ -24,7 +25,6 @@ function computePositionFromReadings(length, angle) {
 }
 
 # Function to compute the new position depending upon two coordinates
-
 function computePosition(pos1, pos2) {
   var new_position_x = pos1.x + pos2.x
   var new_position_y = pos1.y + pos2.y
@@ -34,80 +34,128 @@ function computePosition(pos1, pos2) {
 }
 
 # Function to compute the orientation in global FOR give the position (x, y) coordinates
-
 function computeOrientation(pos) {
   var orientation = math.atan(pos.y, pos.x)
   return orientation
 }
 
-# ----- Function to Start the Buzz Script -----
+# Helper Functions for Obstacle Counting
+# function 
 
+# ----- Function to Start the Buzz Script -----
 function init() {
   log("Obstacle avoidance for Khepera IV using Buzz")
+  # log.flush()
 }
 
 # ----- Function to run on each timestep -----
 
+iteration = 0
+
 function step() {
+  # log("Iteration Number: ", iteration)
+  iteration = iteration + 1
+  var final_rel_obstacle_position = obstacleAvoidance()
+  computeObstacleGlobalPosition(final_rel_obstacle_position)
+  main()
+  # computeOwnPosition()
+
+}
+
+# Obstacle Avoidance Algorithm
+function obstacleAvoidance() {
+
   var i = 0
-  var final_pos = {.x = 0 , .y = 0 }
+  var final_rel_obstacle_pos = {.x = 0 , .y = 0 }
   temp_pos = {}
-  while (i < NUMBER_OF_SENSORS) 
+  while (i < NUMBER_PROXIMITY_SENSORS) 
   {
 
   distance = proximity[i].value             # Sensor reading
   orientation = proximity[i].angle          # Sensor reading
 
   # Position of the obstacle with respect to the robot
-
   temp_pos.i = computePositionFromReadings(distance, orientation)
 
-  log("Iteration Number: ", i)
-
-  final_pos = computePosition(temp_pos.i, final_pos)
+  final_rel_obstacle_pos = computePosition(temp_pos.i, final_rel_obstacle_pos)
 
   i = i+1
-  log("Final Position = ", final_pos)
+  # log("Final Position = ", final_rel_obstacle_pos.x, " ", final_rel_obstacle_pos.y )
   }
-
-  # Iteratively compute own position in space
-  var robot_position = pose.position
-  var robot_orient = pose.orientation
-
 
   # Iteratively updating the distance and orientation of the obstacle
-  orient = computeOrientation(final_pos)
+  orient = computeOrientation(final_rel_obstacle_pos)
 
-  dist = math.sqrt(final_pos.x*final_pos.x + final_pos.y*final_pos.y)
+  dist = math.sqrt(final_rel_obstacle_pos.x*final_rel_obstacle_pos.x + final_rel_obstacle_pos.y*final_rel_obstacle_pos.y)
   dist_final = dist/3
-  log("Orientation: ",orient)
-  log("Distance: ", dist_final)
+  # log("Orientation: ",orient)
+  # log("Distance: ", dist_final)
 
-  # ---- Obstacle Avoidance Algorithm
-
-  if (dist_final < 0.005){
+  # ---- Avoidance Conditions
+  if (dist_final < DISTANCE_THRESHOLD){
    set_wheels(30.0,30.0)
   } 
-
-  if ((orient == 0.0) and (dist_final > 0.005)){
+  if ((orient == 0.0) and (dist_final > DISTANCE_THRESHOLD)){
    set_wheels(30.0, 0.0)
   }
-
   if ((orient < 1.57) and (orient > 0.0)){
    set_wheels(30.0,0.0)
   }
-
   if ((orient > -1.57) and (orient < 0.0)){
     set_wheels(0.0,30.0)
   }
+  return final_rel_obstacle_pos
 }
 
-# # Function to store positions of unique obstacles
-# function StoreUniqueObstacles() {
+function computeObstacleGlobalPosition(final_rel_obstacle_position) {
+    
+  var robot_pose = computeOwnPosition()
+  return 1  
+  # var orientation_angle = math.atan(final_rel_obstacle_position.y, final_rel_obstacle_position.x)
 
-#   return 5
+  # obstacle_pose = {.x = 0, .y = 0}
+  # obstacle_pose.x = robot_pose.x + math.cos(orientation_angle) * fina
+
   
-# }
+}
+
+# Main function for execution
+function main() {
+  tab = {.k = {.x = 0.4, .y = 0.5}, .l = {.x = 11.0, .y = 55}}
+  log(tab.k.x)
+  log(tab.k.y)
+  log(tab.l.x)
+  log(tab.l.y)
+
+}
+
+# Function to compute own position
+function computeOwnPosition() {
+  # Iteratively compute own position in space
+  var robot_pose = pose
+  var robot_position = pose.position
+  var robot_orient = pose.orientation
+
+  var temp_position = {.x =robot_position.y, .y = robot_position.x}
+  var temp_orientation = computeOrientation(temp_position)
+  debug.print(" X: ", robot_position.x, " Y: ", robot_position.y, " Z: ", robot_position.z, " Heading: ", robot_orient.yaw)
+
+  return robot_pose
+
+}
+
+
+# Function to store positions of unique obstacles
+function StoreUniqueObstacles(other_obstacle_position) {
+  
+  var counter = 0
+
+  while ( counter < size(OBSTACLE_COORDINATES)) {
+    if (other_obstacle_position.x = OBSTACLE_COORDINATES[counter].x) and ()
+       (other_obstacle_position.y = OBSTACLE_COORDINATES[counter].y)    
+ }
+  
+}
 
 # Function to setup the robots to join a swarm
 function SetupSwarm() {

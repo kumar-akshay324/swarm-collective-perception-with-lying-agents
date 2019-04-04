@@ -1,11 +1,9 @@
-# Use Shift + Click to select a robot
-# When a robot is selected, its variables appear in this editor
-
-# Use Ctrl + Click (Cmd + Click on Mac) to move a selected robot to a different location
+include "include/string.bzz"
+include "include/vec2.bzz"
 
 # Global variables
 
-DISTANCE_THRESHOLD = 0.005
+DISTANCE_THRESHOLD = 0.001
 
 OBSTACLE_COORDINATES = {}
 WALL_DIAGONAL_COORDINATES = {.x1 = 4, .y1 = 4, .x2 = -4, .y2 = -4}
@@ -56,9 +54,8 @@ function step() {
   # log("Iteration Number: ", iteration)
   iteration = iteration + 1
   var final_rel_obstacle_position = obstacleAvoidance()
-  computeObstacleGlobalPosition(final_rel_obstacle_position)
-  main()
-  # computeOwnPosition()
+  computeOwnPosition(final_rel_obstacle_position)
+  # main()
 
 }
 
@@ -108,14 +105,17 @@ function obstacleAvoidance() {
 }
 
 function computeObstacleGlobalPosition(final_rel_obstacle_position) {
-    
-  var robot_pose = computeOwnPosition()
-  return 1  
-  # var orientation_angle = math.atan(final_rel_obstacle_position.y, final_rel_obstacle_position.x)
 
-  # obstacle_pose = {.x = 0, .y = 0}
-  # obstacle_pose.x = robot_pose.x + math.cos(orientation_angle) * fina
+  var robot_yaw_angle = robot_pose.orientation.yaw
 
+  # if final_rel_obstacle_position 
+
+  var obstacle_global_pos = {.x = 0, .y = 0}
+  obstacle_global_pos.x = robot_pose.position.x + final_rel_obstacle_position.x * math.cos(robot_yaw_angle) + final_rel_obstacle_position.y * math.sin(robot_yaw_angle)
+  obstacle_global_pos.y = robot_pose.position.y - final_rel_obstacle_position.x * math.sin(robot_yaw_angle) + final_rel_obstacle_position.y * math.cos(robot_yaw_angle)
+
+  # debug.print()
+  return obstacle_global_pos
   
 }
 
@@ -130,17 +130,14 @@ function main() {
 }
 
 # Function to compute own position
-function computeOwnPosition() {
+function computeOwnPosition(final_rel_obstacle_position) {
   # Iteratively compute own position in space
-  var robot_pose = pose
+  robot_pose = pose
   var robot_position = pose.position
   var robot_orient = pose.orientation
+  var obs_global_pos = computeObstacleGlobalPosition(final_rel_obstacle_position)
 
-  var temp_position = {.x =robot_position.y, .y = robot_position.x}
-  var temp_orientation = computeOrientation(temp_position)
-  debug.print(" X: ", robot_position.x, " Y: ", robot_position.y, " Z: ", robot_position.z, " Heading: ", robot_orient.yaw)
-
-  return robot_pose
+  debug.print(" X: ", robot_position.x, " Y: ", robot_position.y, " Z: ", robot_position.z, " H: ", robot_orient.yaw, "Obs X:", obs_global_pos.x, "Obs Y:", obs_global_pos.y)
 
 }
 
@@ -151,11 +148,17 @@ function StoreUniqueObstacles(other_obstacle_position) {
   var counter = 0
 
   while ( counter < size(OBSTACLE_COORDINATES)) {
-    if (other_obstacle_position.x = OBSTACLE_COORDINATES[counter].x) and ()
-       (other_obstacle_position.y = OBSTACLE_COORDINATES[counter].y)    
+    if ((other_obstacle_position.x == OBSTACLE_COORDINATES[counter].x) and (other_obstacle_position.y == OBSTACLE_COORDINATES[counter].y)) {
+      debug.print("Num Obstacles: ", 1)
+    }
  }
   
 }
+
+function shareBelief() {
+  
+}
+
 
 # Function to setup the robots to join a swarm
 function SetupSwarm() {
@@ -170,7 +173,6 @@ function SetupSwarm() {
 
 
 # # Function to setup the communication protocol for the robot
-
 # function SetupSwarmCommunication() {
 
 # }

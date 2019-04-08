@@ -5,8 +5,8 @@
   <!-- * General configuration * -->
   <!-- ************************* -->
   <framework>
-    <system threads="1"/>
-    <experiment length="0" ticks_per_second="10" random_seed="11"/>
+    <system threads="2"/>
+    <experiment length="0" ticks_per_second="10" random_seed="0"/>
   </framework>
 
   <!-- *************** -->
@@ -78,19 +78,19 @@
 
     <!-- 6 boxes distributed randomly as obstacles -->
     <distribute>
-      <position method="uniform" min="-4,-4,0" max="4,4,0"/>
+      <position method="uniform" min="-3,-3,0" max="3,3,0"/>
       <orientation method="uniform" min="0,0,0" max="360,0,0"/>
       <entity quantity="6" max_trials="100">
-        <box id="boxes" size="0.05,0.05,0.5" movable="false"/>
+        <box id="boxes" size="0.10,0.10,0.5" movable="false" color="black"/>
       </entity>
     </distribute>
 
     <!-- 6 cylinders distributed randomly as obstacles -->    
     <distribute>
-      <position method="uniform" min="-4,-4,0" max="4,4,0"/>
+      <position method="uniform" min="-3,-3,0" max="3,3,0"/>
       <orientation method="constant" values="0,0,0"/>
       <entity quantity="6" max_trials="100">
-        <cylinder id="cylinders" height="0.5" radius="0.05" movable="false"/>
+        <cylinder id="cylinders" height="0.5" radius="0.10" movable="false" color="blue"/>
       </entity>
     </distribute>
 
@@ -116,6 +116,9 @@
   <!-- ****************** -->
   <visualization>
     <qt-opengl>
+      <camera>
+        <placement idx="0" position="2.39692,1.94281,3.04959" look_at="2.39702,1.95281,2.04964" up="0.00918234,0.999908,0.00999983" lens_focal_length="20" />
+      </camera>
       <user_functions label="buzz_qt"/>
     </qt-opengl>
   </visualization>

@@ -6,6 +6,8 @@
 *.lo
 *.o
 *.obj
+*buzz/*.bo
+*buzz/*.bdb
 *.bo
 *.bdb
 
@@ -32,3 +34,6 @@
 *.exe
 *.out
 *.app
+
+# Built components
+build

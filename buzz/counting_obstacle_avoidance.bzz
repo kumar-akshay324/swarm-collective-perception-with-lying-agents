@@ -52,74 +52,34 @@ function init() {
 
 # ----- Function to run on each timestep -----
 
-iteration = 0
-
+ITERATION_COUNT = 0
 function step() {
-  # log("Iteration Number: ", iteration)
-  iteration = iteration + 1
-  # var final_rel_obstacle_position = obstacleAvoidance()
-  obstacleAvoidance(iteration)
+  log("Iteration Number: ", ITERATION_COUNT)
+  ITERATION_COUNT = ITERATION_COUNT + 1
+
+  # Main Function that encapsulates everything runnign within  
+  main()
   # log("First Obs: ", "X: ", final_rel_obstacle_position.x, ", Y: ", final_rel_obstacle_position.y)
 
   # computeOwnPosition(final_rel_obstacle_position)
-  # main()
 }
-
-# Obstacle Avoidance Algorithm
-# function obstacleAvoidance() {
-
-#   var i = 0
-#   var final_rel_obstacle_pos = {.x = 0 , .y = 0 }
-#   temp_pos = {}
-#   while (i < NUMBER_PROXIMITY_SENSORS) 
-#   {
-
-#     distance = proximity[i].value             # Sensor reading
-#     orientation = proximity[i].angle          # Sensor reading
-#     # Position of the obstacle with respect to the robot
-#     # temp_pos.i = computePositionFromReadings(distance, orientation)
-
-#     var rel_distance = (math.log((distance + 0.085) / 4.14)) / -33.0
-#     log("i: ", i, "D: ", distance, ", O: ", orientation, ", Rd: ", rel_distance)
-#     # log
-
-#     # final_rel_obstacle_pos = computePosition(temp_pos.i, final_rel_obstacle_pos)
-
-#     # log("Final Position = ", final_rel_obstacle_pos.x, " ", final_rel_obstacle_pos.y )
-#   # }
-
-#     debug.print("i: ", i, ", Rd: ", rel_distance, ", Orient X:", orientation)
-
-#     # Iteratively updating the distance and orientation of the obstacle
-#     # orient = computeOrientation(final_rel_obstacle_pos)
-#     # orient = orientation
-#     # dist = math.sqrt(final_rel_obstacle_pos.x*final_rel_obstacle_pos.x + final_rel_obstacle_pos.y*final_rel_obstacle_pos.y)
-#     # dist_final = dist/3
-
-#     # dist_final = rel_distance
-#     # log("Orientation: ",orient)
-#     # log("Distance: ", dist_final)
-
-#   }
-#     return final_rel_obstacle_pos
-# }
 
 # Function for Obstacle Avoidance - Computes the vector sum of all the individual 
 # proximity sensor to confirm if an obstacle exists and needs to be dodged or not
-function obstacleAvoidance(iteration) {
+function obstacleAvoidance() {
   vector_accumulator = {.x = 0, .y = 0}
   i = 0
   vector_storage = {}
   while(i<8) {
 
-    var rel_dist = proximity[i].value
+    var dist = proximity[i].value
     var orient = proximity[i].angle
     # Compute the actual distance of the obstacle based on the proximity sensor reading that exists between 0 and 1
     # From https://the.swarming.buzz/wiki/doku.php?id=buzz_kh4
-    # var rel_dist = (math.log((dist + 0.085) / 4.14)) / -33.0
+    var rel_dist = (math.log((dist + 0.085) / 4.14)) / -33.0
 
     vector_storage[i] = {.x = rel_dist, .y = orient}
-    var obstacle_rel_position = math.vec2.newp(rel_dist, orient)
+    var obstacle_rel_position = math.vec2.newp(dist, orient)
     vector_accumulator = math.vec2.add(vector_accumulator, obstacle_rel_position)
     i = i+1
   }
@@ -145,7 +105,6 @@ function obstacleAvoidance(iteration) {
       set_wheels(0.0,30.0)
     }
   }
-
 }
 
 # function computeObstacleGlobalPosition(final_rel_obstacle_position) {
@@ -159,11 +118,7 @@ function obstacleAvoidance(iteration) {
 
 # Main function for execution
 function main() {
-  tab = {.k = {.x = 0.4, .y = 0.5}, .l = {.x = 11.0, .y = 55}}
-  log(tab.k.x)
-  log(tab.k.y)
-  log(tab.l.x)
-  log(tab.l.y)
+  obstacleAvoidance()
 
 }
 

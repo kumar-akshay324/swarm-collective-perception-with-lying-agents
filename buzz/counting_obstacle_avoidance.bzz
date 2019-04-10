@@ -2,185 +2,166 @@ include "/usr/local/share/buzz/include/vec2.bzz"
 include "/usr/local/share/buzz/include/string.bzz"
 
 # Global variables
-
+NUM_ROBOTS = 8
 DISTANCE_THRESHOLD = 0.05
-
-OBSTACLE_COORDINATES = {}
-WALL_DIAGONAL_COORDINATES = {.x1 = 4, .y1 = 4, .x2 = -4, .y2 = -4}
-
-OBSTACLE_COUNT_BELIEF = 0
 NUMBER_PROXIMITY_SENSORS = 8
 
-NUM_ROBOTS = 8
+PADDING = 0.5
+WALL_DIAGONAL_COORDINATES = {.x1 = 4, .y1 = 4, .x2 = -4, .y2 = -4}
+APPROX_OBS_DISTANCE = 0.05
 
-ITERATION_COUNT = 0
+obstacle_coordinates = {}
+iteration_count_ = 0
 
-# ----- Helper Functions for Obstacle Avoidance-----
+# Stores the coordinates of the obstacl positions for robots that have actually sensed a robot
+robot_obstacle_global_position_ = {}
 
-# Function to compute the position from the distance and angle readings
-function computePositionFromReadings(length, angle) {
-   var local_position_vector 
-   # var length = 4.14*(math.exp(-33.0*expressed_length))- 0.085
-   # print ("(", "Length: ", length, ")")
-   local_position_vector = { .x = length * math.cos(angle),.y = length * math.sin(angle) }
-   return local_position_vector
-}
+# Stores the number of obstacles believed by a particular robot
+robot_obstacle_count_belief_ = {}
 
-# Function to compute the new position depending upon two coordinates
-function computePosition(pos1, pos2) {
-  var new_position_x = pos1.x + pos2.x
-  var new_position_y = pos1.y + pos2.y
-  pos1.x = new_position_x
-  pos1.y = new_position_y 
-  return pos1
-}
-
-# Function to compute the orientation in global FOR give the position (x, y) coordinates
-function computeOrientation(pos) {
-  var orientation = math.atan(pos.y, pos.x)
-  return orientation
-}
 
 # Helper Functions for Obstacle Counting
 # function 
 
 # ----- Function to Start the Buzz Script -----
 function init() {
-  log("Obstacle avoidance for Khepera IV using Buzz")
-  # log.flush()
+  log("Obstacle Couting in Presence of Lying Agents for Khepera IV using Buzz")
 }
 
 # ----- Function to run on each timestep -----
 
-ITERATION_COUNT = 0
 function step() {
-  log("Iteration Number: ", ITERATION_COUNT)
-  ITERATION_COUNT = ITERATION_COUNT + 1
-
-  # Main Function that encapsulates everything runnign within  
+  # log("Iteration Number: ", iteration_count_, ", Robot ID" , id, ", Robot Counter: ", iteration_count_ % 8)
+  iteration_count_ = iteration_count_ + 1
+  # Main Function that encapsulates everything running within  
   main()
-  # log("First Obs: ", "X: ", final_rel_obstacle_position.x, ", Y: ", final_rel_obstacle_position.y)
-
-  # computeOwnPosition(final_rel_obstacle_position)
 }
+
+# Main function for execution
+function main() {
+  obstacleAvoidance()
+
+  neighbors.broadcast("obstacle_count", obstacle_count_)
+}
+
 
 # Function for Obstacle Avoidance - Computes the vector sum of all the individual 
 # proximity sensor to confirm if an obstacle exists and needs to be dodged or not
-function obstacleAvoidance() {
-  vector_accumulator = {.x = 0, .y = 0}
-  i = 0
-  vector_storage = {}
-  while(i<8) {
 
+function obstacleAvoidance() {
+
+  # Track the trajectory on the canvas
+  debug.trajectory.enable(50, 255, 0, 0)
+
+  vector_accumulator = {.x = 0, .y = 0}
+  var obstacle_robot_pose = {}
+
+  i = 0
+  while (i<8) {
     var dist = proximity[i].value
     var orient = proximity[i].angle
     # Compute the actual distance of the obstacle based on the proximity sensor reading that exists between 0 and 1
     # From https://the.swarming.buzz/wiki/doku.php?id=buzz_kh4
     var rel_dist = (math.log((dist + 0.085) / 4.14)) / -33.0
 
-    vector_storage[i] = {.x = rel_dist, .y = orient}
     var obstacle_rel_position = math.vec2.newp(dist, orient)
     vector_accumulator = math.vec2.add(vector_accumulator, obstacle_rel_position)
     i = i+1
   }
 
-  # Track the trajectory on the canvas
-  debug.trajectory.enable(50, 255, 0, 0)
+  # Create a vec2 for the robot position
+  obstacle_robot_pose = math.vec2.new(pose.position.x, pose.position.y)
+  debug.print("Robot X: ", obstacle_robot_pose.x, ", Robot Y: ", obstacle_robot_pose.y)
 
   # Obstacle Avoidance Algorithm
   if (math.vec2.length(vector_accumulator) < DISTANCE_THRESHOLD) {
     set_leds(0, 255, 0)
     set_wheels(30.0,30.0)
-  }
-  else {
-  var j = 0
-    while (j < NUMBER_PROXIMITY_SENSORS) {
-      debug.print("Sensor ID: ", j, ", Obs Dist: ", vector_storage[j].x, ", Obs Orient :", vector_storage[j].y)
-      j = j + 1
+  } else {
+
+    # Check of the obstacle is almost a wall or NOT
+    var is_wall = isObstacleWall(obstacle_robot_pose)
+
+    # If the obstacle is NOT a WALL, then proceed towards checking the uniqueness of the obstacle
+    if (is_wall == 0) {
+      debug.print("Robot Hit Obstacle: ")
+
+      var counter = 0
+      var vector_size = size(robot_obstacle_global_position_)
+
+      var cumulative_sum = 0
+      var is_approx_status = 0
+
+      log("Robot ID: ", id, " | Counter: ", counter, " | Cumulative: " , cumulative_sum , " | Obs Vec Size:", vector_size)
+
+
+      # Check for if obstacles are the same or NOT
+      while (counter < vector_size) {
+        log("In Here")
+      #   # Check if one of the unique obstacles matches the current obstacle position
+      #   is_approx_status = isVectorApprox(robot_obstacle_global_position_[counter], obstacle_robot_pose)
+
+      #   if (is_approx_status == 1) {
+      #     var temp_sum = math.vec2.add(robot_obstacle_global_position_[counter], obstacle_robot_pose)
+      #     robot_obstacle_global_position_[counter] = math.vec2.scale(temp_sum, 0.5)
+      #   } else if (is_approx_status == 0) {
+      #     cumulative_sum = cumulative_sum + 1
+      #   }
+        counter = counter + 1
+      } 
+      if (cumulative_sum == vector_size) {
+        log("Robot ID: ", id, " | Sum Equal ", obstacle_robot_pose, " | Vector Size: ", vector_size)
+        robot_obstacle_global_position_[vector_size] = obstacle_robot_pose
+         # = obstacle_robot_pose
+      }
+
+    } else if (is_wall == 1) {
+      debug.print("Robot Hit Wall")
     }
-    set_leds(255, 0, 0)  
+    set_leds(255, 0, 0)
     if (orient > 0) {
       set_wheels(30.0,0.0)
     } else if (orient < 0) {
       set_wheels(0.0,30.0)
     }
+  }  
+}
+
+
+
+
+function isVectorApprox(vector1, vector2) {
+  var temp_vec = math.vec2.sub(vector1, vector2)
+  var obs_dist = math.vec2.length(temp_vec)
+  log("Robot ID: ", id, " | Distance between Obstacles: ", obs_dist)
+  if (obs_dist < APPROX_OBS_DISTANCE) {
+    return 1
+  } else {
+    return 0
   }
 }
 
-# function computeObstacleGlobalPosition(final_rel_obstacle_position) {
-
-
-
-#   # debug.print()
-#   return obs_global_pos
-  
-# }
-
-# Main function for execution
-function main() {
-  obstacleAvoidance()
-
+function printTable(new_table) {
+  foreach(new_table,
+    function(keya, valuea) {
+      log("Table Key: ", keya, ", Value X: ", valuea)
+    })
 }
 
-# Function to compute own position
-function computeOwnPosition(final_rel_obstacle_position) {
-
-  robot_pose = pose
-  var robot_position = pose.position
-  var robot_orient = pose.orientation
-  var robot_yaw_angle = robot_pose.orientation.yaw
-
-  var obs_global_pos = {.x = 0, .y = 0}
-  obs_global_pos.x = robot_pose.position.x + final_rel_obstacle_position.x * math.cos(robot_yaw_angle) + final_rel_obstacle_position.y * math.sin(robot_yaw_angle)
-  obs_global_pos.y = robot_pose.position.y - final_rel_obstacle_position.x * math.sin(robot_yaw_angle) + final_rel_obstacle_position.y * math.cos(robot_yaw_angle)
-
-
-  # Iteratively compute own position in space
-  # var obs_global_pos = computeObstacleGlobalPosition(final_rel_obstacle_position)
-
-  # log("Final Obs: ", "X: ", obs_global_pos.x, ", Y: ", obs_global_pos.y)
-  # log("Original Obs", "X: ", final_rel_obstacle_position.x, ", Y: ", final_rel_obstacle_position.y)
-
-  debug.print(" X: ", robot_position.x, ", Y: ", robot_position.y, ", H: ", robot_orient.yaw, ", Obs X:", obs_global_pos.x, ", Obs Y:", obs_global_pos.y)
-
+function isObstacleWall(obstacle_position) {
+  var is_obstacle_wall = 0
+  if (obstacle_position.x > (WALL_DIAGONAL_COORDINATES.x1 - PADDING)) {
+    is_obstacle_wall = 1
+  } else if (obstacle_position.x < (WALL_DIAGONAL_COORDINATES.x2 + PADDING)) {
+    is_obstacle_wall = 1
+  } else if (obstacle_position.y > (WALL_DIAGONAL_COORDINATES.y1 - PADDING)) {
+    is_obstacle_wall = 1
+  } else if (obstacle_position.y < (WALL_DIAGONAL_COORDINATES.y2 + PADDING)) {
+    is_obstacle_wall = 1
+  }
+  log("Robot ID: ", id, " | Is Obstacle Wall: ", is_obstacle_wall)
+  return is_obstacle_wall
 }
-
-
-# Function to store positions of unique obstacles
-function StoreUniqueObstacles(other_obstacle_position) {
-  
-  var counter = 0
-
-  while ( counter < size(OBSTACLE_COORDINATES)) {
-    if ((other_obstacle_position.x == OBSTACLE_COORDINATES[counter].x) and (other_obstacle_position.y == OBSTACLE_COORDINATES[counter].y)) {
-      debug.print("Num Obstacles: ", 1)
-    }
- }
-  
-}
-
-function shareBelief() {
-  
-}
-
-
-# Function to setup the robots to join a swarm
-# function SetupSwarm() {
-
-#   robot_swarm = swarm.create()
-#   var i = 0
-#   while (i < 10) {
-#     robot_swarm.select(i)
-#   }
-#   return robot_swarm                              # Returning a robot swarm of 15 robots
-# }
-
-
-# # Function to setup the communication protocol for the robot
-# function SetupSwarmCommunication() {
-
-# }
-
 
 # # Function to compute and save the locations of things that can NOT be an obstacle
 # # Such things include the walls and the other robots that are detected.

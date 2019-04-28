@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="2"/>
-    <experiment length="60" ticks_per_second="10" random_seed="0"/>
+    <experiment length="0" ticks_per_second="10" random_seed="5"/>
   </framework>
 
   <!-- *************** -->
@@ -44,22 +44,22 @@
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
-  <arena size="8, 8, 1" center="0,0,0.5">
-    <box id="wall_north" size="8,0.1,0.5" movable="false">
-      <body position="0,4,0" orientation="0,0,0" />
+  <arena size="6, 6, 1" center="0,0,0.5">
+    <box id="wall_north" size="6,0.1,0.5" movable="false">
+      <body position="0,3,0" orientation="0,0,0" />
     </box>
-    <box id="wall_south" size="8,0.1,0.5" movable="false">
-      <body position="0,-4,0" orientation="0,0,0" />
+    <box id="wall_south" size="6,0.1,0.5" movable="false">
+      <body position="0,-3,0" orientation="0,0,0" />
     </box>
-    <box id="wall_east" size="0.1,8,0.5" movable="false">
-      <body position="4,0,0" orientation="0,0,0" />
+    <box id="wall_east" size="0.1,6,0.5" movable="false">
+      <body position="3,0,0" orientation="0,0,0" />
     </box>
-    <box id="wall_west" size="0.1,8,0.5" movable="false">
-      <body position="-4,0,0" orientation="0,0,0" />
+    <box id="wall_west" size="0.1,6,0.5" movable="false">
+      <body position="-3,0,0" orientation="0,0,0" />
     </box>
 
     <!--
-        Here, we distribute 15 Khepera IV bots in this way:
+        Here, we distribute 8 Khepera IV bots in this way:
         - the position is uniformly distributed
         on the ground, in the square whose corners are (-4,-4) and (4,4)
         - the orientations are non-zero only when rotating around Z and chosen
@@ -67,30 +67,21 @@
         standard deviation is 360 degrees.
     -->
     <distribute>
-      <position method="uniform" min="-4,-4,0" max="4,4,0"/>
+      <position method="uniform" min="-3,-3,0" max="3,3,0"/>
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0"/>
       <entity quantity="8" max_trials="100">
-        <kheperaiv id="kheperaIV">
+        <kheperaiv id="kheperaIV" rab_data_size="1000">
           <controller config="bckiv"/>
         </kheperaiv>
       </entity>
     </distribute>
 
-    <!-- 6 boxes distributed randomly as obstacles -->
-    <distribute>
-      <position method="uniform" min="-3.5,-3.5,0" max="3.5,3.5,0"/>
-      <orientation method="uniform" min="0,0,0" max="360,0,0"/>
-      <entity quantity="6" max_trials="100">
-        <box id="boxes" size="0.15,0.15,0.5" movable="false" color="black"/>
-      </entity>
-    </distribute>
-
     <!-- 6 cylinders distributed randomly as obstacles -->    
     <distribute>
-      <position method="uniform" min="-3.5,-3.5,0" max="3.5,3.5,0"/>
+      <position method="uniform" min="-2.5,-2.5,0" max="2.5,2.5,0"/>
       <orientation method="constant" values="0,0,0"/>
       <entity quantity="6" max_trials="100">
-        <cylinder id="cylinders" height="0.5" radius="0.10" movable="false" color="blue"/>
+        <cylinder id="cylinders" height="0.5" radius="0.05" movable="false" color="red"/>
       </entity>
     </distribute>
 

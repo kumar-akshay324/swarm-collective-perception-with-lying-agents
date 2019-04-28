@@ -1,0 +1,59 @@
+
+
+# Function to check if two vectors are close enought to be the same or not
+# (Threshold here is a variable parameter)
+function isVectorApprox(vector1, vector2, threshold) {
+  var temp_vec = math.vec2.sub(vector1, vector2)
+  var obs_dist = math.vec2.length(temp_vec)
+  if (obs_dist < threshold) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
+# Function to check if two positions are close enought to be the same or not
+# (Threshold here is a variable parameter)
+function isPositionApprox(pos1, pos2, threshold) {
+  var obs_dist = math.sqrt((pos1.x - pos2.x)^2 + (pos1.y - pos2.y)^2)
+  if (obs_dist < threshold) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
+
+# Prints the contents of any provided table
+function printTable(new_table) {
+  var index = 0
+  foreach(new_table,
+    function(keya, valuea) {
+      log("Index: ", index, "Table Key: ", keya, ", Table Value : ", valuea)
+      index = index + 1
+    })
+}
+
+# Prints the contents of any provided table
+function printObstaclePositionTable(identity, table) {
+  
+  if (identity == -1) {
+    idd = id
+  } else {
+    idd = identity
+  } 
+  var sz = size(table)
+  if (sz != 0) {
+    log("Id: ", idd, " | Table Size: ", sz, " printing obstacle positions")
+    foreach(table,
+      function(key, value) {
+        var obs_pos = value.pos
+        log("id: ", idd, " #: ", key, " [Pr: ", value.p, ", [X: ", obs_pos.x, ", Y:", obs_pos.y, "] ]")
+      })
+  }
+}
+
+function avgPosition(pos1, pos2) {
+  var avg_position = {.x = (pos1.x + pos2.x) / 2, .y = (pos1.y + pos2.y) / 2 }
+  return avg_position
+}

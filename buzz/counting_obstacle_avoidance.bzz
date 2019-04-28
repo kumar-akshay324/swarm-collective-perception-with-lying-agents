@@ -346,7 +346,8 @@ function updateObstaclePositionBeliefUsingNeighbors(rbt_belief, inc_blf_list) {
               if (temp_prob1 > QUALIFYING_PROB_THRESHOLD) {
                 return                
               } else {
-                temp_prob1 = temp_prob1*0.99
+                var new_prob = temp_prob1*0.999
+                updateObstaclePositionBelief(inde, new_prob, -1, {})
               }
             }
           }

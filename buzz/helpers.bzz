@@ -16,7 +16,7 @@ function isVectorApprox(vector1, vector2, threshold) {
 # (Threshold here is a variable parameter)
 function isPositionApprox(pos1, pos2, threshold) {
   var obs_dist = math.sqrt((pos1.x - pos2.x)^2 + (pos1.y - pos2.y)^2)
-  if (obs_dist < threshold) {
+  if ((obs_dist < threshold) and (obs_dist != 0)) {
     return 1
   } else {
     return 0

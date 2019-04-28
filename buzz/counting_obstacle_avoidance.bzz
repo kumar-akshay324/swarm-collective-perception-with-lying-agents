@@ -2,7 +2,6 @@ include "/usr/local/share/buzz/include/vec2.bzz"
 include "/usr/local/share/buzz/include/string.bzz"
 include "/media/akshay/anything_Else/WorcesterPolytechnicInstitute/SemIV/DirectedResearch/collective-perception-with-lying-agents/buzz/helpers.bzz"
 
-
 # Global constant for Obstacle Avoidance
 NUM_ROBOTS = 8
 OBS_DIST_THRESHOLD = 0.05
@@ -10,126 +9,149 @@ NUMBER_PROXIMITY_SENSORS = 8
 
 # Global constant for isWallCheck()
 PADDING = 0.5
-WALL_DIAGONAL_COORDINATES = {.x1 = 4, .y1 = 4, .x2 = -4, .y2 = -4}
-
-# Approx distance threshold
-APPROX_OBS_DISTANCE = 0.05
-
-obstacle_coordinates = {}
-iteration_count_ = 0
-
-# Stores the coordinates of the obstacle positions for all robots
-robot_obstacle_global_position_ = {}
-
-# Final number of obstacles
-final_obstacle_count_ = 0
-
-# Declaration
-temp_obstacle_count = {}
+WALL_DIAGONAL_COORDINATES = {.x1 = 3, .y1 = 3, .x2 = -3, .y2 = -3}
 
 # Stores the number of obstacles believed by a particular robot
-robot_obstacle_count_belief_ = {}
+robot_obstacle_position_belief_ = {}
+UNIQUE_OBS_THRESHOLD = 0.1
+
+# Threshold for robot position being same for two robots
+SAME_OBS_THRESHOLD = 0.20
+
+# Threshold for uniqueness of the obstacle
 BYZANTINE_ROBOT_IDS = {.0 = 3, .1 = 5}
 
-# Current robot position
-robot_current_position_ = {}
-APPROX_RBT_DISTANCE = 0.10
+# Thresholds for different kinds of probability
+CONFIRM_PROB = 0.999
+QUALIFYING_PROB_THRESHOLD = 0.6
+
+# Placeholder for duration passed
+iteration_count_ = 0
+
+# Time durations for different phases
+EXPLORATION_TICKS = 500
+BELIEF_UPDATE_TICKS = 1000
+INITIALIZATION_TICKS = 50
+FINAL_TICKS = 1200
+
+# robot_own_position_ = {.pos = {}}
+robot_own_position_ = {}
+other_robot_obstacle_position_ = {}
+
 
 # ----- Function to Start the Buzz Script - Runs only once -----
 function init() {
   log("Obstacle Couting in Presence of Lying Agents for Khepera IV using Buzz")
-  initRobotObstacleBeliefs()
-  initRobotCurrentPosition()
-  # printTable(robot_obstacle_count_belief_)
+  # initRobotObstacleBeliefs()
 }
 
 # ----- Function to run on each timestep -----
 function step() {
 
-  iteration_count_ = iteration_count_ + 1
-  # log("Iteration Number: ", iteration_count_, ", Robot ID" , id, ", Robot Counter: ", iteration_count_ % 8)
+  if (iteration_count_ < FINAL_TICKS) {
+    # log("Iteration: ", iteration_count_)
+    iteration_count_ = iteration_count_ + 1
 
-  # Store the robot's current position
-  storeRobotCurrentPosition(iteration_count_)
+    # Broadcast robot's own position
+    neighbors.broadcast("own_position", robot_own_position_)
+    processNeighborPosition()
 
-  # Main Function that encapsulates everything running within  
-  main()
-  log("Size: ", size(robot_current_position_))
-  log("Iter: ", iter)
-  # neighborListening()
-  # temp_obstacle_count = {}
-}
+    # Main Function that encapsulates everything running within
+    main()
+    neighbors.broadcast("robot_obstacle_belief", robot_obstacle_position_belief_)
+    processNeighborList()
 
-function storeRobotCurrentPosition(iteration_count_) {
-  # robot_current_position_[iteration_count_ % NUM_ROBOTS] = {}
-  var temp_table = {.x = pose.position.x, .y = pose.position.y}
-  # printTable(temp_table)
-  var num = id
-  robot_current_position_[iteration_count_ % NUM_ROBOTS] = temp_table
-  # robot_current_position_[num] = 
-  # Print the robot's current
-  printRobotCurrentPosition()
-}
-
-function initRobotCurrentPosition() {
-  var i = 0
-  while (i < NUM_ROBOTS) {
-    robot_current_position_[i] = {.x = 0, .y = 0}
-    i = i + 1
+  } else {  
+    finalResultPerRobot()
   }
 }
 
+function updateObstaclePositionBelief(index, prob, new_pose, pose_value) {
+  
+  # Append obstacle pose to the table with the probability for a new/unique obstacle is index is -1
+  # Else update the obstacle details for an already existing obstacle if index is >= 0
+  var ind = 0
+  if (index == -1) {
+    ind = size(robot_obstacle_position_belief_)
+  } else {
+    ind = index
+  }
+
+  # Update the probability for the obstacle's existence, in the table
+  # Else if prob is -1, then keep the probability value same
+  var pr = 0
+  if (prob == -1) {
+    var temp_p = robot_obstacle_position_belief_[ind]
+    pr = temp_p.p
+  } else {
+    pr = prob
+  }
+
+  # Update the obstacle list to a new pose if that is provided and new_pose flag is true
+  # Else Update the obstacle list with the robot's current position (representing the obstacle's position)
+  # if no new pose is provided and new_pose flag is false
+  if (new_pose == -1) {
+    robot_obstacle_position_belief_[ind] = {.p = pr, .pos = {.x = pose.position.x, .y = pose.position.y} }
+  } else if (new_pose == 1) {
+    robot_obstacle_position_belief_[ind] = {.p = pr, .pos = {.x = pose_value.x, .y = pose_value.y}}
+  }
+}
 
 # Main function for execution
 function main() {
   obstacleAvoidance()
-  # printTable(robot_obstacle_count_belief_)
-  # neighbors.broadcast("obstacle_count", robot_obstacle_count_belief_)
+  # printObstaclePositionTable(-1, robot_obstacle_position_belief_)
+
   # updateShareRobotCountBelief()
 }
 
+# NOT USED UNTIL NOW
 # Robot Obstacle Counter Initialization & Byzantine Behavior Injection
 function initRobotObstacleBeliefs() {
-  var i = 0
-  while (i < NUM_ROBOTS) {
 
-    robot_obstacle_count_belief_[id] = {}
-
-    # Byzantine Behavior Infusion
-    # var j = 0
-    # size_byzantines = size(BYZANTINE_ROBOT_IDS)
-    # while (j < size_byzantines) {
-    #   if (id == BYZANTINE_ROBOT_IDS[j]) {
-    #     robot_obstacle_count_belief_[id] = {.0 = {.x = 0, .y = 0}}
-    #   }
-    #   j = j + 1
-    # }
-
-    i = i + 1
+  if (id == 2) {
+    robot_obstacle_position_belief_[0] = {.p = 10.0, .pos = {.x = 5.0, .y = 2.0}}
+    robot_obstacle_position_belief_[1] = {.p = 11.0, .pos = {.x = 15.0, .y = 12.0}}    
+  } else if (id == 3) {
+    robot_obstacle_position_belief_[50] = {.p = 10.0, .pos = {.x = 15.0, .y = 11.0}}
+    robot_obstacle_position_belief_[60] = {.p = 9.0, .pos = {.x = 51.0, .y = 14.0}}
   }
+  else {
+    robot_obstacle_position_belief_[0] = {.p = 0.0, .pos = {.x = 0.0, .y = 0.0}}
+  }
+  # Byzantine Behavior Infusion
+  # var j = 0
+  # size_byzantines = size(BYZANTINE_ROBOT_IDS)
+  # while (j < size_byzantines) {
+  #   if (id == BYZANTINE_ROBOT_IDS[j]) {
+  #     robot_obstacle_count_belief_[id] = {.0 = {.x = 0, .y = 0}}
+  #   }
+  #   j = j + 1
+  # }
 }
 
 # Function for Obstacle Avoidance - Computes the vector sum of all the individual 
 # proximity sensor to confirm if an obstacle exists and needs to be dodged or not
 function obstacleAvoidance() {
 
+  robot_own_position_ = {.pos = {.x = pose.position.x, .y = pose.position.y}}
+
   # Track the trajectory on the canvas
-  debug.trajectory.enable(50, 255, 0, 0)
+  debug.trajectory.enable(100, 55, 126, 55)
 
   vector_accumulator = {.x = 0, .y = 0}
-  var obstacle_robot_pose = {}
-
-  i = 0
+  var i = 0
   while (i<NUM_ROBOTS) {
     var dist = proximity[i].value
     var orient = proximity[i].angle
-    # Compute the actual distance of the obstacle based on the proximity sensor reading that exists between 0 and 1
-    # From https://the.swarming.buzz/wiki/doku.php?id=buzz_kh4
-    var rel_dist = (math.log((dist + 0.085) / 4.14)) / -33.0
 
     var obstacle_rel_position = math.vec2.newp(dist, orient)
     vector_accumulator = math.vec2.add(vector_accumulator, obstacle_rel_position)
     i = i+1
+
+    # Compute the actual distance of the obstacle based on the proximity sensor reading that exists between 0 and 1
+    # From https://the.swarming.buzz/wiki/doku.php?id=buzz_kh4
+    # var rel_dist = (math.log((dist + 0.085) / 4.14)) / -33.0
   }
 
   # Create a vec2 for the robot position
@@ -141,85 +163,76 @@ function obstacleAvoidance() {
     set_leds(0, 255, 0)
     set_wheels(30.0,30.0)
   } else {
+
     set_leds(255, 0, 0)
-    if (orient > 0) {
+
+    if (math.vec2.angle(vector_accumulator) > 0.0) {
       set_wheels(30.0,0.0)
-    } else if (orient < 0) {
+    }
+    else {
       set_wheels(0.0,30.0)
     }
 
     # Check of the obstacle is almost a wall or NOT
     var is_wall = isObstacleWall(obstacle_robot_pose)
-    var is_another_robot = isAnotherRobot(obstacle_robot_pose)
 
     # If the obstacle is NOT a WALL, then proceed towards checking the uniqueness of the obstacle
-    if ((is_wall == 0) and (is_another_robot == 0)) {
-      debug.print("Robot Hit Obstacle")
-      log.print("Robot Hit Obstacle")
+    if (is_wall == 0) {
 
-      var counter = 0
-      var vector_size = size(robot_obstacle_global_position_)
+      var str_placeholder = ""
 
-      var cumulative_sum = 0
-      var is_approx_status = 0
+      if (isAnotherRobot() == 1) {
+        # Check is for robot bumping into another robot
+        str_placeholder = "Just Another Robot"
 
-      # log("Rbt ID: ", id, " | Ctr: ", counter, " | Cum: " , cumulative_sum , " | Obs Vec Size:", vector_size)
+      } else if (isObstacleUnique(obstacle_robot_pose) == 1) {
+        
+        # Check is for uniqueness of the obstacle from the previous ones in the list
+        str_placeholder = "New Obstacle | "
+        
+        # Given that the robot has itself seen the obstacle, the position has a probability of 0.999
+        # the position is an average of its own and the if approx position
+        # index = -1 => New obstacle, so the position is appended at the end
+        # probability = 0.999
+        # pose_value = -1 => Robot's own position (Approximately equal to the obstacle's position 
+        # Accuracy of assumption increases with reducing obstacle size) 
+        updateObstaclePositionBelief(-1, CONFIRM_PROB, -1, {})
 
-      # Check for if obstacles are the same or NOT
-      while (counter < vector_size) {
-        # Check if one of the unique obstacles matches the current obstacle position
-        is_approx_status = isVectorApprox(robot_obstacle_global_position_[counter], obstacle_robot_pose, APPROX_OBS_DISTANCE)
-
-        if (is_approx_status == 1) {
-          var temp_sum = math.vec2.add(robot_obstacle_global_position_[counter], obstacle_robot_pose)
-          robot_obstacle_global_position_[counter] = math.vec2.scale(temp_sum, 0.5)
-        } else if (is_approx_status == 0) {
-          cumulative_sum = cumulative_sum + 1
-        }
-        counter = counter + 1
-      } 
-      if (cumulative_sum == vector_size) {
-        # log("Robot ID: ", id, " | Sum Equal ", obstacle_robot_pose, " | Vector Size: ", vector_size)
-        robot_obstacle_global_position_[vector_size] = obstacle_robot_pose
-         # = obstacle_robot_pose
+      } else {
+        # Final confirmation of old robot if overlap found
+        str_placeholder = "Old Obstacle "
       }
 
+      # Show the status
+      debug.print(str_placeholder, "X: ", obstacle_robot_pose.x, ", Y: ", obstacle_robot_pose.y)
+
+      # Create a patch near the obstacle location
+      debug.rays.add(6,12,165, obstacle_robot_pose.x,obstacle_robot_pose.y,0.0, (obstacle_robot_pose.x + 0.05),(obstacle_robot_pose.y + 0.05),0.0)  
+
     } else if (is_wall == 1) {
-      debug.print("Robot Hit Wall")
-    } else if (is_another_robot == 1) {
-      log("ID:: ", id, " Robot Hit Obstacle")
-      debug.print("Robot Hit another robot")    
+      debug.print("Wall | ", "X: ", obstacle_robot_pose.x, ", Y: ", obstacle_robot_pose.y)
     }
 
   }
 }
 
-function updateShareRobotCountBelief() {
-  var temporary_sum = 0 
-  foreach(temp_obstacle_count,
-    function(key, value) {
-      temporary_sum = temporary_sum + value
-    })
-  # Average of robot's own belief and average of the other robot's blief and then floored
-  # final_obstacle_count_[id] = (final_obstacle_count_[id] + (temporary_sum/size(temp_obstacle_count)))/2 
-  # final_obstacle_count_[id] = math.floor(final_obstacle_count_[id])
-  robot_obstacle_count_belief_[id] = (robot_obstacle_count_belief_[id] + (temporary_sum/size(temp_obstacle_count)))/2 
-  robot_obstacle_count_belief_[id] = math.floor(robot_obstacle_count_belief_[id])
+# Make the robots listen to the other robots sharing their list of obstacles 
+function processNeighborList() {
+  if (iteration_count_ <= EXPLORATION_TICKS) {
+    neighbors.ignore("robot_obstacle_belief")
+  } else if (iteration_count_ <= BELIEF_UPDATE_TICKS ) {
 
+    log("Rbt: ", id, " Neigbor Count: ", neighbors.count())
+
+    neighbors.listen("robot_obstacle_belief",
+      function(vid, incoming_list, rid) {
+        # log("Rbt: ", id, ", Got (", vid, ",", "incoming_list", ") from robot #", rid)
+    
+        deriveRobotBelief(rid, incoming_list)
+
+     })
+  }
 }
-
-# Make the robots listen to the other robots sharing the (key, value) pair with key = OBSTACLE_COUNT
-# function neighborListening() {
-#   temp_obstacle_count = {}
-#   neighbors.listen("obstacle_count",
-#    function(vid, value, rid) {
-#       log("Rbt: ", id, ", Got (", vid, ",", value, ") from robot #", rid)
-#       temp_obstacle_count[rid] = value
-#    })
-# }
-
-
-
 
 
 # Function to check if the obstacle is actually a WALL or not 
@@ -240,31 +253,147 @@ function isObstacleWall(obstacle_position) {
   return is_obstacle_wall
 }
 
-# Function to compute if the current obstacle is another robot or not
-function isAnotherRobot(pose_contender) {
-  foreach(robot_current_position_,
-    function(key, value) {
-      var distance = math.sqrt((pose_contender.x - value.x)^2 + (pose_contender.y - value.y)^2)
-      if ((distance < APPROX_RBT_DISTANCE) and (distance != 0)) {
-        log("-- ID: ", id, ", D: ", distance)
-        debug.print("Robot Hit Another Robot")
-        return 1
-      } else {
-        return 0
-      }
+# Function to check if the obstacle is actually something that the robot has seen earlier or not 
+# If the obstacle is seen eariler, then the obstacle is not counted
+function isObstacleUnique(obstacle_position) {
+  var i = 0
+  while(i < size(robot_obstacle_position_belief_)) {
+    var test_position = robot_obstacle_position_belief_[i]
+
+    # If the obstacle is something the robot has already seen, update the location for that
+    # particular obstacle as an average of the two while keeping the probability unaffected
+    if (isPositionApprox(obstacle_position, test_position.pos, UNIQUE_OBS_THRESHOLD) == 1) {
+
+      var new_position = avgPosition(obstacle_position, test_position.pos)
+      updateObstaclePositionBelief(i, -1, 1, new_position)
+
+      return 0
     }
-  )
+    i = i + 1
+  }
+  return 1
 }
 
+# Function to determine the overlap in obstacle beliefs between any two robot tables
+# It generates the belief that the current robot has in the information incoming from the neighbor robot 
+# Uses the robot's own belief in obstacle position and the incoming message
+function deriveRobotBelief(incoming_robot_id, incoming_belief_list) {
+  var intersection_count  = 0
 
-function printRobotCurrentPosition() {
-  var j = 0
-  while (j < size(robot_current_position_)) {
-    log("--ID: ", j, ", X: ", robot_current_position_[j].x, ", Y: " ,robot_current_position_[j].y)
-    j = j + 1
+  if ((size(robot_obstacle_position_belief_) != 0) and (size(incoming_belief_list) != 0)) {
+    foreach(robot_obstacle_position_belief_, 
+      function(index, value) {
+
+        var temp_obs1 = value.pos
+
+        foreach(incoming_belief_list,
+          function(index1, value1) {
+
+            var temp_obs2 = value1.pos
+
+            if (isPositionApprox(temp_obs1, temp_obs2, SAME_OBS_THRESHOLD) == 1) {
+              intersection_count = intersection_count + 1
+            }
+
+          }
+        )
+
+      }
+    )
+
+    var union_count = size(robot_obstacle_position_belief_) + size(incoming_belief_list)
+
+    var robot_belief = 0
+    if (union_count != 0) {
+      robot_belief = intersection_count / union_count 
+    }
+
+    # Update the belief using the data from the neighbors
+    updateObstaclePositionBeliefUsingNeighbors(robot_belief, incoming_belief_list)
+
+    # if (robot_belief == 0) {
+    #   printObstaclePositionTable(-1, robot_obstacle_position_belief_)
+    #   printObstaclePositionTable(incoming_robot_id, incoming_belief_list)
+    # }
+    # log("Cur Rbt ID: ", id, " Inc Rbt ID: ", incoming_robot_id, "Cc: ", size(robot_obstacle_position_belief_), " Ic: ", size(incoming_belief_list))
+    # log("Cur Rbt ID: ", id, " Inc Rbt ID: ", incoming_robot_id, " I: ", intersection_count, " U:", union_count ," Belief: ", robot_belief)
   }
 }
 
+
+# Function to update the belief of the current robot, about the position of the obstacles
+# depending on the incoming obstacle lists coming through from the neighbors
+function updateObstaclePositionBeliefUsingNeighbors(rbt_belief, inc_blf_list) {
+
+  if ((size(robot_obstacle_position_belief_) != 0) and (size(inc_blf_list) != 0)) {
+    foreach(robot_obstacle_position_belief_, 
+      function(inde, valu) {
+
+        var temp_obs1 = valu.pos
+        var temp_prob1 = valu.p
+
+        foreach(inc_blf_list,
+          function(index1, value1) {
+
+            var temp_obs2 = value1.pos
+            var temp_prob2 = value1.p
+
+            if (isPositionApprox(temp_obs1, temp_obs2, SAME_OBS_THRESHOLD) == 1) {
+              var new_pos = avgPosition(temp_obs1, temp_obs2)
+              var new_prob = (0.75 * temp_prob1 + 0.25 * temp_prob2 * rbt_belief) / 2
+              updateObstaclePositionBelief(inde, new_prob, 1, new_pos)
+            } else {
+              if (temp_prob1 > QUALIFYING_PROB_THRESHOLD) {
+                return                
+              } else {
+                temp_prob1 = temp_prob1*0.99
+              }
+            }
+          }
+        )
+      }
+    )
+
+  }    
+}
+
+
+# Function to check if the obstacle is actually a robot nearby
+function isAnotherRobot() {
+  
+  log("Rbt: ", id, "Other Pos Size: ", size(other_robot_obstacle_position_), " NC:", neighbors.count())
+  foreach(other_robot_obstacle_position_, 
+    function(keyy, valuee) {
+      if (isPositionApprox(valuee, robot_own_position_.pos, UNIQUE_OBS_THRESHOLD) == 1) {
+        return 1
+      }
+
+    })
+  return 0
+}
+
+# Storing the position of the nearby robots
+function processNeighborPosition() {
+  if (iteration_count_ >= INITIALIZATION_TICKS) {
+    var j = 0
+    neighbors.listen("own_position",
+      function(val_id, incoming_position, rbt_id) {
+
+        if (size(incoming_position) != 0) {
+          # var temp_val = incoming_position.pos
+          # log("Rbt: ", rbt_id, "VID: ", temp_val.x ," --- ", temp_val.y) # , "   " , incoming_position)
+          other_robot_obstacle_position_[j] = incoming_position.pos
+        }
+        j = j + 1
+      }
+    )
+  }
+}
+
+# Function to project the final positions and the probabilities of the obstacle
+function finalResultPerRobot() {
+  printObstaclePositionTable(-1, robot_obstacle_position_belief_)
+}
 
 function reset() {}
 

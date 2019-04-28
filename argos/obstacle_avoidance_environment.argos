@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="2"/>
-    <experiment length="0" ticks_per_second="10" random_seed="5"/>
+    <experiment length="0" ticks_per_second="10" random_seed="15"/>
   </framework>
 
   <!-- *************** -->
@@ -70,7 +70,7 @@
       <position method="uniform" min="-3,-3,0" max="3,3,0"/>
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0"/>
       <entity quantity="8" max_trials="100">
-        <kheperaiv id="kheperaIV" rab_data_size="1000">
+        <kheperaiv id="kheperaIV" rab_data_size="2000">
           <controller config="bckiv"/>
         </kheperaiv>
       </entity>

@@ -34,6 +34,8 @@ BELIEF_UPDATE_TICKS = 1000
 INITIALIZATION_TICKS = 50
 FINAL_TICKS = 1200
 
+FILE_PRINT_TICKS = 1199
+
 # robot_own_position_ = {.pos = {}}
 robot_own_position_ = {}
 other_robot_obstacle_position_ = {}
@@ -61,8 +63,11 @@ function step() {
     neighbors.broadcast("robot_obstacle_belief", robot_obstacle_position_belief_)
     processNeighborList()
 
-  } else {  
+  }
+
+  if (iteration_count_ == FILE_PRINT_TICKS + 1) {  
     finalResultPerRobot()
+    printFinalResultPerRobot()
   }
 }
 
@@ -362,7 +367,7 @@ function updateObstaclePositionBeliefUsingNeighbors(rbt_belief, inc_blf_list) {
 # Function to check if the obstacle is actually a robot nearby
 function isAnotherRobot() {
   
-  log("Rbt: ", id, "Other Pos Size: ", size(other_robot_obstacle_position_), " NC:", neighbors.count())
+  log("Rbt: ", id, " Other Pos Size: ", size(other_robot_obstacle_position_), " NC:", neighbors.count())
   foreach(other_robot_obstacle_position_, 
     function(keyy, valuee) {
       if (isPositionApprox(valuee, robot_own_position_.pos, UNIQUE_OBS_THRESHOLD) == 1) {
@@ -395,6 +400,31 @@ function processNeighborPosition() {
 function finalResultPerRobot() {
   printObstaclePositionTable(-1, robot_obstacle_position_belief_)
 }
+
+# Function to save the final positions and the probabilities of the obstacles in a file
+function printFinalResultPerRobot() {
+  PATH = "/media/akshay/anything_Else/WorcesterPolytechnicInstitute/SemIV/DirectedResearch/collective-perception-with-lying-agents/results"
+  FILE_NAME = "/store_data.txt"
+
+  log("--- printing ---")
+
+  file_path = string.concat(PATH, FILE_NAME)
+  file = io.fopen(file_path, "a+")
+
+  # io.fwrite(f, "aaaaaaaaa1")
+  # io.fclose(f)
+
+  foreach(robot_obstacle_position_belief_,
+    function(key, value) {
+      var obs_pos = value.pos
+      var sttr = string.concat(string.tostring(value.p), " " ,string.tostring(obs_pos.x), " ", string.tostring(obs_pos.y))
+      io.fwrite(file, sttr)
+    })
+  io.fclose(file)
+
+  # printObstaclePositionTable(-1, robot_obstacle_position_belief_)
+}
+
 
 function reset() {}
 

@@ -1,6 +1,10 @@
-include "/usr/local/share/buzz/include/vec2.bzz"
-include "/usr/local/share/buzz/include/string.bzz"
-include "/media/akshay/anything_Else/WorcesterPolytechnicInstitute/SemIV/DirectedResearch/collective-perception-with-lying-agents/buzz/helpers.bzz"
+# include "/usr/local/share/buzz/include/vec2.bzz"
+# include "/usr/local/share/buzz/include/string.bzz"
+# include "/media/akshay/anything_Else/WorcesterPolytechnicInstitute/SemIV/DirectedResearch/collective-perception-with-lying-agents/buzz/helpers.bzz"
+
+include "include/vec2.bzz"
+include "include/string.bzz"
+include "buzz/helpers.bzz"
 
 # Global constant for Obstacle Avoidance
 NUM_ROBOTS = 8
@@ -381,7 +385,7 @@ function isAnotherRobot() {
 # Storing the position of the nearby robots
 function processNeighborPosition() {
   if (iteration_count_ >= INITIALIZATION_TICKS) {
-    var j = 0
+    j = 0
     neighbors.listen("own_position",
       function(val_id, incoming_position, rbt_id) {
 

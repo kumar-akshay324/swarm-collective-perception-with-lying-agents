@@ -19,14 +19,23 @@ def plotObstacles():
 	x_list = []
 	y_list = []
 
-	fig, ax = plt.subplots()
+	x_list_low = []
+	y_list_low = []
 
-	plt.title('Plot showing the locations of the positions of the obstacles')
-	plt.xlabel('X coordinate')
-	plt.ylabel('Y coordinate')
 
-	plt.xlim(-3,3)
-	plt.ylim(-3,3)
+	prob_list = []
+
+	fig, (ax1, ax2) = plt.subplots(1,2)
+	
+	ax1.set_title('Plot showing the locations of the positions of the obstacles')
+	ax1.set_xlabel('X coordinate')
+	ax1.set_ylabel('Y coordinate')
+
+	ax1.set_xlim(-3,3)
+	ax1.set_ylim(-3,3)
+
+	ax2.set_title('Common Probability values observed')
+	ax2.set_ylabel('Probability')
 
 	with open(final_file, "r") as coordinates_file:
 		for line in coordinates_file:
@@ -41,9 +50,20 @@ def plotObstacles():
 				y_list.append(y_coord)
 				# print (x_coord, "   " ,type(x_coord))
 				# print (y_coord, "   " ,type(y_coord))
+			else:
+				x_list_low.append(x_coord)
+				y_list_low.append(y_coord)
 
-	plt.scatter(x_list, y_list, color='red')
-	plt.grid()
+			if prob not in prob_list:
+				prob_list.append(prob)
+
+	ax1.scatter(x_list, y_list, color='red', label="Obstacles with probability over the threshold")
+	# ax1.Circle(((x_list, y_list), 0.05))
+	ax1.scatter(x_list_low, y_list_low, color='blue', label="Obstacles with very low probability ")
+	ax1.legend()
+	ax1.grid()
+
+	ax2.plot(prob_list)
 	plt.show()
 	print counter
 
